@@ -1,5 +1,7 @@
 # Discover: AI experience search
 
+**Live demo:** https://ai-experience-search.vercel.app
+
 Search travel experiences in plain English ("relaxing half-day thing in Bali under $80"). Claude turns the request into structured filters you can see and edit. Then check live availability in a keyboard-accessible calendar and hold a booking.
 
 ## Features
