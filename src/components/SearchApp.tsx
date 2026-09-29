@@ -89,7 +89,7 @@ export function SearchApp({ initialFilters, aiEnabled }: { initialFilters: Filte
           <span className="text-lg font-semibold tracking-tight">Discover</span>
         </div>
         <span className="rounded-full border border-line px-3 py-1 text-xs text-muted">
-          {aiEnabled ? "AI search: Claude" : "AI search: offline parser (set ANTHROPIC_API_KEY)"}
+          {aiEnabled ? "AI search: live" : "AI search: offline preview"}
         </span>
       </header>
 

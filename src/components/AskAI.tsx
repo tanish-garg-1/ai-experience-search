@@ -6,7 +6,7 @@ import { mergeParsed, type ParsedQuery } from "@/lib/nlParse";
 import type { Filters } from "@/lib/types";
 
 interface ParseResponse {
-  source: "claude" | "offline";
+  source: "groq" | "offline";
   parsed: ParsedQuery;
   warning?: string;
 }
@@ -85,7 +85,7 @@ export function AskAI({ onApply, currentFilters }: { onApply: (f: Filters) => vo
         {!error && result && (
           <p className="text-muted">
             <span className="mr-2 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs">
-              {result.source === "claude" ? "Claude" : "offline"}
+              {result.source === "groq" ? "AI" : "offline"}
             </span>
             {result.parsed.explanation}
             {result.warning && <span className="ml-1 text-warn">({result.warning})</span>}

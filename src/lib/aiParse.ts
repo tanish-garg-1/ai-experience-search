@@ -1,6 +1,5 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import Groq from "groq-sdk";
 import { z } from "zod";
 import type { ParsedQuery } from "./nlParse";
 import { CATEGORIES, CITIES, SORTS } from "./types";
@@ -24,30 +23,37 @@ Map vibes to categories, e.g. "relaxing" -> Wellness, "foodie" -> Food & Drink, 
 If a city is not in the allowed list, leave city null and mention that in the explanation.
 Put only genuinely leftover keywords in q.`;
 
-let client: Anthropic | null = null;
+/** A fast, cheap text model; supports Groq's strict json_schema mode, which guarantees this shape. */
+const MODEL = process.env.GROQ_TEXT_MODEL || "openai/gpt-oss-20b";
+
+let client: Groq | null = null;
 
 export function aiEnabled(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+  return Boolean(process.env.GROQ_API_KEY);
 }
 
 export async function aiParse(input: string, signal?: AbortSignal): Promise<ParsedQuery> {
-  client ??= new Anthropic();
-  const response = await client.beta.messages.parse(
+  client ??= new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const response = await client.chat.completions.create(
     {
-      model: "claude-opus-5",
-      max_tokens: 2000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "low", format: betaZodOutputFormat(ParsedSchema) },
-      system: SYSTEM,
-      messages: [{ role: "user", content: input }],
+      model: MODEL,
+      max_completion_tokens: 2000,
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "search_filters", strict: true, schema: z.toJSONSchema(ParsedSchema) },
+      },
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: input },
+      ],
     },
     { signal },
   );
-  if (response.stop_reason === "refusal" || !response.parsed_output) {
-    throw new Error("The model could not interpret this request");
-  }
-  const p = response.parsed_output;
+
+  const raw = response.choices[0]?.message?.content;
+  if (!raw) throw new Error("The model could not interpret this request");
+  const p = ParsedSchema.parse(JSON.parse(raw));
+
   return {
     q: p.q ?? undefined,
     categories: p.categories,
