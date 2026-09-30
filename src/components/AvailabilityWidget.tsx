@@ -13,7 +13,12 @@ type Keyed = { key: string } & ({ status: "error"; message: string } | { status:
 
 export function AvailabilityWidget({ experience, onClose }: { experience: Experience; onClose: () => void }) {
   const today = useMemo(() => new Date(), []);
-  const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
+  // Late in the month nearly every day is already past, which reads as "sold out", so start on next month.
+  const [cursor, setCursor] = useState(() => {
+    const daysLeft = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate();
+    const start = new Date(today.getFullYear(), today.getMonth() + (daysLeft < 7 ? 1 : 0), 1);
+    return { year: start.getFullYear(), month: start.getMonth() };
+  });
   const [loaded, setLoaded] = useState<Keyed | null>(null);
   const [selectedDay, setSelectedDay] = useState<AvailabilityDay | null>(null);
   const selected = selectedDay?.date ?? null;
