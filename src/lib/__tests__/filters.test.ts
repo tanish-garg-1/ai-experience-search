@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getAllExperiences } from "../data";
-import { applyFilters, filtersToParams, paramsToFilters } from "../filters";
+import { applyFilters, closestMatches, filtersToParams, paramsToFilters } from "../filters";
 import { heuristicParse, mergeParsed } from "../nlParse";
 import { EMPTY_FILTERS, type Filters } from "../types";
 
@@ -49,6 +49,28 @@ describe("applyFilters", () => {
   it("sorts by price ascending", () => {
     const res = applyFilters(all, { ...EMPTY_FILTERS, sort: "price_asc" });
     for (let i = 1; i < res.length; i++) expect(res[i].price).toBeGreaterThanOrEqual(res[i - 1].price);
+  });
+
+  it("ignores filler words like party size in the keyword", () => {
+    const base = { ...EMPTY_FILTERS, city: "Bali" as const, q: "sunset" };
+    expect(applyFilters(all, { ...base, q: "sunset for two" })).toEqual(applyFilters(all, base));
+  });
+});
+
+describe("closestMatches", () => {
+  const all = getAllExperiences();
+
+  it("loosens the keyword before touching the destination", () => {
+    const f = { ...EMPTY_FILTERS, city: "Bali" as const, q: "zzznomatch" };
+    expect(applyFilters(all, f)).toEqual([]);
+    const closest = closestMatches(all, f)!;
+    expect(closest.dropped).toEqual(["“zzznomatch”"]);
+    expect(closest.filters.city).toBe("Bali");
+    expect(closest.items.every((e) => e.city === "Bali")).toBe(true);
+  });
+
+  it("returns null when nothing is active to loosen", () => {
+    expect(closestMatches([], EMPTY_FILTERS)).toBeNull();
   });
 });
 

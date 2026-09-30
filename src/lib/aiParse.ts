@@ -5,7 +5,7 @@ import type { ParsedQuery } from "./nlParse";
 import { CATEGORIES, CITIES, SORTS } from "./types";
 
 const ParsedSchema = z.object({
-  q: z.string().nullable().describe("Leftover keywords not captured by any other field, or null"),
+  q: z.string().nullable().describe("At most two concrete activity keywords not captured by any other field, or null"),
   categories: z.array(z.enum(CATEGORIES)),
   city: z.enum(CITIES).nullable(),
   minPrice: z.number().nullable(),
@@ -21,7 +21,8 @@ Prices are per person in USD. Durations are in hours. Ratings are 0-5.
 Only set a field when the request clearly implies it; otherwise use null (or [] for categories).
 Map vibes to categories, e.g. "relaxing" -> Wellness, "foodie" -> Food & Drink, "outdoorsy" -> Nature or Adventure.
 If a city is not in the allowed list, leave city null and mention that in the explanation.
-Put only genuinely leftover keywords in q.`;
+q is matched literally against listing titles and descriptions, and every word in it must appear, so keep it to at most two concrete activity words a listing would actually contain (e.g. "sunset", "pottery", "jazz"), or null.
+Never put party size, dates, occasions, or filler in q ("for two", "this weekend", "anniversary", "something fun"), and never repeat what another field already captures.`;
 
 /** A fast, cheap text model; supports Groq's strict json_schema mode, which guarantees this shape. */
 const MODEL = process.env.GROQ_TEXT_MODEL || "openai/gpt-oss-20b";

@@ -7,13 +7,14 @@ import { EMPTY_FILTERS, type Experience, type Filters } from "@/lib/types";
 import { AskAI } from "./AskAI";
 import { AvailabilityWidget } from "./AvailabilityWidget";
 import { FilterPanel } from "./FilterPanel";
-import { ResultsList } from "./ResultsList";
+import { ResultsList, type Closest } from "./ResultsList";
 import { SearchBox } from "./SearchBox";
 
 interface SearchResponse {
   total: number;
   items: Experience[];
   nextOffset: number | null;
+  closest?: Closest | null;
 }
 
 type Status = "loading" | "success" | "error";
@@ -174,6 +175,8 @@ export function SearchApp({ initialFilters, aiEnabled }: { initialFilters: Filte
             onLoadMore={loadMore}
             onRetry={() => setRetryToken((t) => t + 1)}
             onClear={() => setFilters(EMPTY_FILTERS)}
+            closest={status === "success" ? (result?.closest ?? null) : null}
+            onRelax={(relaxed) => setFilters((f) => ({ ...relaxed, sort: f.sort }))}
             onSelect={setSelected}
           />
         </main>

@@ -92,7 +92,17 @@ export function activeChips(f: Filters): Chip[] {
   return chips;
 }
 
-const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+// Words people naturally type that never describe the activity itself ("for two", "a nice thing to do").
+// Requiring them to appear in a listing would wipe out otherwise good matches.
+const STOPWORDS = new Set(
+  "a an and any are at be best but by can do for from get go good great i in into is it me my near nice of on one or our some something somewhere that the thing things this to two three four we with want looking find experience experiences activity activities trip tour tours people person couple family friends kids day days".split(" "),
+);
+
+const tokenize = (s: string) =>
+  s
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t && !STOPWORDS.has(t));
 
 function textScore(e: Experience, tokens: string[]): number {
   if (!tokens.length) return 1;
@@ -128,4 +138,41 @@ export function applyFilters(all: Experience[], f: Filters): Experience[] {
     duration: (a, b) => a.e.durationHours - b.e.durationHours,
   };
   return scored.sort(by[f.sort]).map((x) => x.e);
+}
+
+/**
+ * Drop order when nothing matches: loosest "nice to have" first, the destination last, since
+ * someone searching Bali never wants Lisbon suggested before a pricier Bali option.
+ */
+const RELAX_STEPS: { label: (f: Filters) => string | null; drop: (f: Filters) => Filters }[] = [
+  { label: (f) => (tokenize(f.q).length ? `“${f.q.trim()}”` : null), drop: (f) => ({ ...f, q: "" }) },
+  { label: (f) => (f.minRating !== null ? `${f.minRating}+ stars` : null), drop: (f) => ({ ...f, minRating: null }) },
+  { label: (f) => (f.maxDurationHours !== null ? `up to ${f.maxDurationHours}h` : null), drop: (f) => ({ ...f, maxDurationHours: null }) },
+  {
+    label: (f) => (f.minPrice !== null || f.maxPrice !== null ? "the price range" : null),
+    drop: (f) => ({ ...f, minPrice: null, maxPrice: null }),
+  },
+  { label: (f) => (f.categories.length ? f.categories.join(" / ") : null), drop: (f) => ({ ...f, categories: [] }) },
+  { label: (f) => f.city, drop: (f) => ({ ...f, city: null }) },
+];
+
+export interface Closest {
+  filters: Filters;
+  dropped: string[];
+  items: Experience[];
+}
+
+/** When the exact filters match nothing, loosen them one step at a time until something does. */
+export function closestMatches(all: Experience[], f: Filters): Closest | null {
+  let current = f;
+  const dropped: string[] = [];
+  for (const step of RELAX_STEPS) {
+    const label = step.label(current);
+    if (!label) continue;
+    current = step.drop(current);
+    dropped.push(label);
+    const items = applyFilters(all, current);
+    if (items.length) return { filters: current, dropped, items };
+  }
+  return null;
 }

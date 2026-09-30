@@ -2,7 +2,14 @@
 
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { Experience } from "@/lib/types";
+import type { Experience, Filters } from "@/lib/types";
+
+export interface Closest {
+  filters: Filters;
+  dropped: string[];
+  total: number;
+  items: Experience[];
+}
 
 interface Props {
   status: "loading" | "success" | "error";
@@ -10,14 +17,19 @@ interface Props {
   error: string | null;
   hasMore: boolean;
   loadingMore: boolean;
+  closest: Closest | null;
   onLoadMore: () => void;
   onRetry: () => void;
   onClear: () => void;
+  onRelax: (f: Filters) => void;
   onSelect: (e: Experience) => void;
 }
 
+const joinWords = (words: string[]) =>
+  words.length < 2 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words.at(-1)}`;
+
 export function ResultsList(props: Props) {
-  const { status, items, error, onRetry, onClear } = props;
+  const { status, items, error, closest, onRetry, onClear, onRelax, onSelect } = props;
 
   if (status === "error") {
     return (
@@ -44,6 +56,38 @@ export function ResultsList(props: Props) {
             </div>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (status === "success" && items.length === 0 && closest) {
+    return (
+      <div>
+        <div className="mb-4 rounded-2xl border border-dashed border-line p-5">
+          <p className="font-medium">No exact matches — here are the closest ones</p>
+          <p className="mt-1 text-sm text-muted">
+            These match everything except {joinWords(closest.dropped)}.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onRelax(closest.filters)}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg"
+            >
+              Show all {closest.total} close match{closest.total === 1 ? "" : "es"}
+            </button>
+            <button type="button" onClick={onClear} className="rounded-lg border border-line px-4 py-2 text-sm font-medium">
+              Clear all filters
+            </button>
+          </div>
+        </div>
+        <div role="list" aria-label="Closest matches" className="space-y-3">
+          {closest.items.map((e) => (
+            <div key={e.id} role="listitem">
+              <ExperienceCard experience={e} onSelect={onSelect} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
