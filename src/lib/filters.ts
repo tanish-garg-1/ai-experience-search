@@ -141,17 +141,17 @@ export function applyFilters(all: Experience[], f: Filters): Experience[] {
 }
 
 /**
- * Drop order when nothing matches: loosest "nice to have" first, the destination last, since
- * someone searching Bali never wants Lisbon suggested before a pricier Bali option.
+ * Drop order when nothing matches: practical limits first, then what was asked for, the destination
+ * last. Someone after a jazz night in Kyoto would rather see one slightly over budget than karaoke.
  */
 const RELAX_STEPS: { label: (f: Filters) => string | null; drop: (f: Filters) => Filters }[] = [
-  { label: (f) => (tokenize(f.q).length ? `“${f.q.trim()}”` : null), drop: (f) => ({ ...f, q: "" }) },
   { label: (f) => (f.minRating !== null ? `${f.minRating}+ stars` : null), drop: (f) => ({ ...f, minRating: null }) },
   { label: (f) => (f.maxDurationHours !== null ? `up to ${f.maxDurationHours}h` : null), drop: (f) => ({ ...f, maxDurationHours: null }) },
   {
     label: (f) => (f.minPrice !== null || f.maxPrice !== null ? "the price range" : null),
     drop: (f) => ({ ...f, minPrice: null, maxPrice: null }),
   },
+  { label: (f) => (tokenize(f.q).length ? `“${f.q.trim()}”` : null), drop: (f) => ({ ...f, q: "" }) },
   { label: (f) => (f.categories.length ? f.categories.join(" / ") : null), drop: (f) => ({ ...f, categories: [] }) },
   { label: (f) => f.city, drop: (f) => ({ ...f, city: null }) },
 ];
@@ -172,7 +172,13 @@ export function closestMatches(all: Experience[], f: Filters): Closest | null {
     current = step.drop(current);
     dropped.push(label);
     const items = applyFilters(all, current);
-    if (items.length) return { filters: current, dropped, items };
+    if (!items.length) continue;
+    // Over budget, the closest options are the least over budget.
+    if (f.maxPrice !== null && current.maxPrice === null) {
+      current = { ...current, sort: "price_asc" };
+      items.sort((a, b) => a.price - b.price);
+    }
+    return { filters: current, dropped, items };
   }
   return null;
 }

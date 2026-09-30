@@ -176,7 +176,7 @@ export function SearchApp({ initialFilters, aiEnabled }: { initialFilters: Filte
             onRetry={() => setRetryToken((t) => t + 1)}
             onClear={() => setFilters(EMPTY_FILTERS)}
             closest={status === "success" ? (result?.closest ?? null) : null}
-            onRelax={(relaxed) => setFilters((f) => ({ ...relaxed, sort: f.sort }))}
+            onRelax={setFilters}
             onSelect={setSelected}
           />
         </main>

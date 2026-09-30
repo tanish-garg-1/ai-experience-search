@@ -69,6 +69,16 @@ describe("closestMatches", () => {
     expect(closest.items.every((e) => e.city === "Bali")).toBe(true);
   });
 
+  it("goes over budget before dropping what was asked for, cheapest first", () => {
+    const f = { ...EMPTY_FILTERS, city: "Kyoto" as const, q: "jazz", maxPrice: 10 };
+    const closest = closestMatches(all, f)!;
+    expect(closest.dropped).toEqual(["the price range"]);
+    expect(closest.items.every((e) => e.title.toLowerCase().includes("jazz"))).toBe(true);
+    const prices = closest.items.map((e) => e.price);
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+    expect(closest.filters.sort).toBe("price_asc");
+  });
+
   it("returns null when nothing is active to loosen", () => {
     expect(closestMatches([], EMPTY_FILTERS)).toBeNull();
   });
