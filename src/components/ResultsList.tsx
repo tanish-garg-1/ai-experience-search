@@ -74,7 +74,7 @@ export function ResultsList(props: Props) {
               onClick={() => onRelax(closest.filters)}
               className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg"
             >
-              Show all {closest.total} close match{closest.total === 1 ? "" : "es"}
+              {closest.total === 1 ? "Use these filters" : `Show all ${closest.total} close matches`}
             </button>
             <button type="button" onClick={onClear} className="rounded-lg border border-line px-4 py-2 text-sm font-medium">
               Clear all filters
