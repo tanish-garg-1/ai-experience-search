@@ -250,6 +250,9 @@ export function AvailabilityWidget({ experience, onClose }: { experience: Experi
                       <p className={`text-xs ${selectedDay.status === "few" ? "text-warn" : "text-muted"}`}>
                         {selectedDay.status === "few" ? `Only ${selectedDay.spots} left` : `${selectedDay.spots} spots left`}
                       </p>
+                      <p className="text-xs text-muted">
+                        ${selectedDay.price} per person{selectedDay.price > experience.price ? " · weekend rate" : ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2" role="group" aria-label="Guests">
                       <button
